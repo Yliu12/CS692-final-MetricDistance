@@ -9,7 +9,9 @@ import java.util.*;
 
 /**
  * Created by yliu12 on 2017/4/25.
+ * CS692-Final-DistanceMetrics
  */
+
 
 
 /*
@@ -221,8 +223,6 @@ public class MetricDistance {
                         ||(minDistanceObj.getNumOfDifferentFields()==dObj.getNumOfDifferentFields()&&minDistanceObj.getDistanceTotal()>dObj.getDistanceTotal())){
 
                     minDistanceObj = dObj;
-                    continue;
-
                 }
 
 
@@ -327,6 +327,5 @@ public class MetricDistance {
     enum MD_errortype {
         IOException, Exception, FileNameNotCorrect, EmptySourceFile, SourceFileTooShort, IllegalFistLineInFile, WrongRecordNumberInFile, WrongFieldNumberInFile, IllegalModuleName, DuplicateModuleName, IllegalField
     }
-///"(\\d{1,32},){3}"
 
 }
