@@ -127,6 +127,10 @@ public class MetricDistance {
 
         firstLineCheck(firstLine);
         bodyCheckandMergeSameMods(linesFromFIle);
+
+        if(moduleMap.size() ==1){
+            MD_error("All Module are the same", MD_errortype.AllModuleAreSame, 9, null);
+        }
         return null;
     }
 
@@ -228,6 +232,7 @@ public class MetricDistance {
 
 
             }
+            resultMap.remove(minDistanceObj.getModName()+"->"+currentMod);
             resultMap.put(currentMod+"->"+minDistanceObj.getModName(),minDistanceObj.getDistanceArray().clone());
 
 
@@ -264,24 +269,11 @@ public class MetricDistance {
 
 
     private void printResult(Map<String, int[]> resultmap) {
+        List<String> toDeleteKeys = new ArrayList<>();
 
-        for (String keys : resultmap.keySet()) {
-            String[] mods = keys.split("->");
-            String mod1 = mods[0];
-            String mod2 = mods[1];
 
-            for (String otherkeys : resultmap.keySet()) {
-
-                String[] otherMods = otherkeys.split("->");
-                String otherMod1 = otherMods[0];
-                String otherMod2 = otherMods[1];
-
-                if(otherMod2.equals(mod1)&&otherMod1.equals(mod1)){
-                    resultmap.remove(otherkeys);
-                    break;
-                }
-
-            }
+        for(String toDeleteKey : toDeleteKeys){
+            resultmap.remove(toDeleteKey);
         }
 
         System.out.println("digraph G {");
@@ -325,7 +317,18 @@ public class MetricDistance {
     }
 
     enum MD_errortype {
-        IOException, Exception, FileNameNotCorrect, EmptySourceFile, SourceFileTooShort, IllegalFistLineInFile, WrongRecordNumberInFile, WrongFieldNumberInFile, IllegalModuleName, DuplicateModuleName, IllegalField
+        IOException,
+        Exception,
+        FileNameNotCorrect,
+        EmptySourceFile,
+        SourceFileTooShort,
+        IllegalFistLineInFile,
+        WrongRecordNumberInFile,
+        WrongFieldNumberInFile,
+        IllegalModuleName,
+        DuplicateModuleName,
+        IllegalField,
+        AllModuleAreSame
     }
 
 }
