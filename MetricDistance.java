@@ -36,7 +36,13 @@ public class MetricDistance {
 
     private List<String> rawModNames = new ArrayList<>();
 
+public MetricDistance (String fileDirectory){
+    this.fileDirectory = fileDirectory;
 
+    }
+    public MetricDistance ( ){
+
+    }
 
     public static void main(String[] args) {
         MetricDistance MD = new MetricDistance();
@@ -44,9 +50,12 @@ public class MetricDistance {
 
     }
 
+
+
+
     private void calculateMetricDistance() {
         try {
-            readConsoleInput();
+            readConsoleInput(fileDirectory);
             fileDirectoryFormatCheck(fileDirectory);
             readInputFile(fileDirectory);
             fileDataFormatCheck(linesFromFIle);
@@ -54,7 +63,7 @@ public class MetricDistance {
             printResult(resultmap);
 
         } catch (Exception e) {
-            MD_error(e.getMessage(), MD_errortype.Exception, 9, e);
+            MD_error(e.getMessage(), MD_errorType.Exception, 9, e);
         }
 
 
@@ -62,7 +71,10 @@ public class MetricDistance {
 
 
 
-    private void readConsoleInput() throws IOException {
+    private void readConsoleInput(String fileDirectory) throws IOException {
+        if (fileDirectory != null){
+            return ;
+        }
 
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Please type in file name");
@@ -75,7 +87,7 @@ public class MetricDistance {
 
     private void fileDirectoryFormatCheck(String fileDirectory) {
         if (!fileDirectory.matches(".*.txt"))
-            MD_error("FileNameNotCorrect", MD_errortype.FileNameNotCorrect, 9, null);
+            MD_error("FileNameNotCorrect", MD_errorType.FileNameNotCorrect, 9, null);
         //throw Exception e;
     }
 
@@ -101,10 +113,10 @@ public class MetricDistance {
 
         } catch (IOException e) {
 
-            MD_error(e.getMessage(), MD_errortype.IOException, 9, e);
+            MD_error(e.getMessage(), MD_errorType.IOException, 9, e);
         } catch (Exception e) {
 
-            MD_error(e.getMessage(), MD_errortype.Exception, 9, e);
+            MD_error(e.getMessage(), MD_errorType.Exception, 9, e);
         } finally {
             br.close();
         }
@@ -114,11 +126,11 @@ public class MetricDistance {
 
     private String fileDataFormatCheck(List<String> linesFromFIle) {
         if (null == linesFromFIle || linesFromFIle.isEmpty()) {
-            MD_error("The Source file is empty", MD_errortype.EmptySourceFile, 9, null);
+            MD_error("The Source file is empty", MD_errorType.EmptySourceFile, 9, null);
             return null;
         }
         if (linesFromFIle.size() < 3) {
-            MD_error("The Source file does not have enough record", MD_errortype.SourceFileTooShort, 9, null);
+            MD_error("The Source file does not have enough record", MD_errorType.SourceFileTooShort, 9, null);
             return null;
         }
 
@@ -129,19 +141,19 @@ public class MetricDistance {
         bodyCheckandMergeSameMods(linesFromFIle);
 
         if(moduleMap.size() ==1){
-            MD_error("All Module are the same", MD_errortype.AllModuleAreSame, 9, null);
+            MD_error("All Module are the same", MD_errorType.AllModuleAreSame, 9, null);
         }
         return null;
     }
 
     private void firstLineCheck(String firstLine) {
         if (!firstLine.matches("\\d{1,32},\\d{1,32}")) {
-            MD_error("Illegal First Line In File", MD_errortype.IllegalFistLineInFile, 9, null);
+            MD_error("Illegal First Line In File", MD_errorType.IllegalFistLineInFile, 9, null);
         }
         String[] firstLineItems = firstLine.split(",");
 
         if (!firstLineItems[0].equals(linesFromFIle.size() + "")) {
-            MD_error("Wrong Recod Number In File", MD_errortype.WrongRecordNumberInFile, 9, null);
+            MD_error("Wrong Recod Number In File", MD_errorType.WrongRecordNumberInFile, 9, null);
         }
         fieldTotal = Integer.parseInt(firstLineItems[1]);
     }
@@ -156,15 +168,15 @@ public class MetricDistance {
 
 
             if (fields.length != fieldTotal + 1) {
-                MD_error("Error in number of fields, expected " + fieldTotal + " but " + (fields.length - 1) + " in " + moduleName, MD_errortype.WrongFieldNumberInFile, 9, null);
+                MD_error("Error in number of fields, expected " + fieldTotal + " but " + (fields.length - 1) + " in " + moduleName, MD_errorType.WrongFieldNumberInFile, 9, null);
             }
 
 
             if (!moduleName.matches("Mod\\d{1,32}")) {
-                MD_error("Illegal Module Name " + moduleName, MD_errortype.IllegalModuleName, 9, null);
+                MD_error("Illegal Module Name " + moduleName, MD_errorType.IllegalModuleName, 9, null);
             }
             if (rawModNames.contains(moduleName)) {
-                MD_error("Duplicate Module Name " + moduleName, MD_errortype.DuplicateModuleName, 9, null);
+                MD_error("Duplicate Module Name " + moduleName, MD_errorType.DuplicateModuleName, 9, null);
             }
             rawModNames.add(moduleName);
 
@@ -173,7 +185,7 @@ public class MetricDistance {
             for (int i = 1; i < fields.length; i++) {
                 String field = fields[i].trim();
                 if (!field.matches("\\d{1,32}")) {
-                    MD_error(" Illegal Field in " + moduleName, MD_errortype.IllegalField, 9, null);
+                    MD_error(" Illegal Field in " + moduleName, MD_errorType.IllegalField, 9, null);
                 }
                 onlyFields[i - 1] = Integer.parseInt(field);
             }
@@ -224,7 +236,8 @@ public class MetricDistance {
 
                 if(minDistanceObj == null
                         ||minDistanceObj.getNumOfDifferentFields()>dObj.getNumOfDifferentFields()
-                        ||(minDistanceObj.getNumOfDifferentFields()==dObj.getNumOfDifferentFields()&&minDistanceObj.getDistanceTotal()>dObj.getDistanceTotal())){
+                        ||(minDistanceObj.getNumOfDifferentFields()==dObj.getNumOfDifferentFields()
+                            &&minDistanceObj.getDistanceTotal()>dObj.getDistanceTotal())){
 
                     minDistanceObj = dObj;
                 }
@@ -303,20 +316,20 @@ public class MetricDistance {
 
 //==================================================================================Error Handling ======================================================================================================================
     private void MD_error(String errorMessage, Enum MD_errortype, int severity, Exception e) {
-        System.out.println("==========================================ERROR==================================================");
-        System.out.println(errorMessage);
-        System.out.println("Error Type" + MD_errortype);
-        System.out.println("severity: " + severity);
+        System.err.println("==========================================ERROR==================================================");
+        System.err.println(errorMessage);
+        System.err.println("Error Type" + MD_errortype);
+        System.err.println("severity: " + severity);
         if (null != e) {
             e.printStackTrace();
         }
-        System.out.println("=============================================ERROR===============================================");
+        System.err.println("=============================================ERROR===============================================");
 
         System.exit(1);
 
     }
 
-    enum MD_errortype {
+    enum MD_errorType {
         IOException,
         Exception,
         FileNameNotCorrect,
