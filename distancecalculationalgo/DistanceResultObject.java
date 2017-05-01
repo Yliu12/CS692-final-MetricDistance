@@ -1,9 +1,8 @@
-package modulemetricdistance;
-
-import java.security.PublicKey;
+package modulemetricdistance.distancecalculationalgo;
 
 /**
  * Created by yliu12 on 2017/4/27.
+ *
  */
 public class DistanceResultObject {
 

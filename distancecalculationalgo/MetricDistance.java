@@ -1,9 +1,6 @@
-package modulemetricdistance;
+package modulemetricdistance.distancecalculationalgo;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 
@@ -11,20 +8,6 @@ import java.util.*;
  * Created by yliu12 on 2017/4/25.
  * CS692-Final-DistanceMetrics
  */
-
-
-
-/*
-To DO
-
-    1. WHat's the Largest Record/module Number?
-
-
-    2. What should happen if There is only one Record
-
-
- */
-
 
 
 public class MetricDistance {
@@ -35,6 +18,7 @@ public class MetricDistance {
     private Map<String, int[]> moduleMap = new HashMap<>();
 
     private List<String> rawModNames = new ArrayList<>();
+    private boolean proceedFlag = true;
 
 public MetricDistance (String fileDirectory){
     this.fileDirectory = fileDirectory;
@@ -53,28 +37,34 @@ public MetricDistance (String fileDirectory){
 
 
 
-    private void calculateMetricDistance() {
+    public String calculateMetricDistance() throws MDException{
         try {
-            readConsoleInput(fileDirectory);
+            if (fileDirectory == null){
+                readConsoleInput();
+            }
+
+            System.out.println(fileDirectory);
             fileDirectoryFormatCheck(fileDirectory);
             readInputFile(fileDirectory);
             fileDataFormatCheck(linesFromFIle);
-            Map<String,int[]> resultmap = calculateResults();
-            printResult(resultmap);
+            if(!proceedFlag){
+                return null;
+            }
+            Map<String,int[]> resultMap = calculateResults();
+            printResult(resultMap);
 
         } catch (Exception e) {
-            MD_error(e.getMessage(), MD_errorType.Exception, 9, e);
+           e.printStackTrace();
+            // MD_error(e.getMessage(), MD_errorType.Exception, 9, e);
         }
-
+        return "";
 
     }
 
 
 
-    private void readConsoleInput(String fileDirectory) throws IOException {
-        if (fileDirectory != null){
-            return ;
-        }
+    private void readConsoleInput() throws IOException, MDException {
+
 
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Please type in file name");
@@ -85,18 +75,24 @@ public MetricDistance (String fileDirectory){
 
     }
 
-    private void fileDirectoryFormatCheck(String fileDirectory) {
+    private void fileDirectoryFormatCheck(String fileDirectory)throws  MDException {
         if (!fileDirectory.matches(".*.txt"))
-            MD_error("FileNameNotCorrect", MD_errorType.FileNameNotCorrect, 9, null);
+            MD_error("FileNameNotCorrect", MD_errorType.FileDirectoryException, 8);
         //throw Exception e;
     }
 
 
-    private void readInputFile(String fileDirectory) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(fileDirectory));
-        System.out.println("+++++++++++++++++++++++++++++++++++FileData Starts+++++++++++++++++++++++++++++++");
+    private void readInputFile(String fileDirectory) throws IOException, MDException {
 
-        try {
+        File f =  new File(fileDirectory);
+        if(f.length()>10000000){
+            MD_error("File Too Large, Max 10MB", MD_errorType.IOException, 9);
+
+        }
+
+
+        try (BufferedReader br = new BufferedReader(new FileReader(fileDirectory))) {
+
 
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();
@@ -105,32 +101,30 @@ public MetricDistance (String fileDirectory){
                 sb.append(line);
                 sb.append(System.lineSeparator());
                 linesFromFIle.add(line);
-                System.out.println(line);
+
                 line = br.readLine();
             }
 
+
+            System.out.println("+++++++++++++++++++++++++++++++++++FileData Starts+++++++++++++++++++++++++++++++");
+            System.out.println(sb.toString());
             System.out.println("+++++++++++++++++++++++++++++++++++FileData Ends+++++++++++++++++++++++++++++++");
 
-        } catch (IOException e) {
 
-            MD_error(e.getMessage(), MD_errorType.IOException, 9, e);
         } catch (Exception e) {
-
-            MD_error(e.getMessage(), MD_errorType.Exception, 9, e);
-        } finally {
-            br.close();
+            e.printStackTrace();
         }
 
     }
 
 
-    private String fileDataFormatCheck(List<String> linesFromFIle) {
+    private String fileDataFormatCheck(List<String> linesFromFIle)throws  MDException {
         if (null == linesFromFIle || linesFromFIle.isEmpty()) {
-            MD_error("The Source file is empty", MD_errorType.EmptySourceFile, 9, null);
+            MD_error("The Source file is empty", MD_errorType.FileFormatException, 9);
             return null;
         }
         if (linesFromFIle.size() < 3) {
-            MD_error("The Source file does not have enough record", MD_errorType.SourceFileTooShort, 9, null);
+            MD_error("The Source file does not have enough record", MD_errorType.FileFormatException, 9);
             return null;
         }
 
@@ -141,24 +135,50 @@ public MetricDistance (String fileDirectory){
         bodyCheckandMergeSameMods(linesFromFIle);
 
         if(moduleMap.size() ==1){
-            MD_error("All Module are the same", MD_errorType.AllModuleAreSame, 9, null);
+
+            /* TO Be Tested
+                Delete THis Error and make it an output
+
+             */
+            proceedFlag = false;
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("digraph G {");
+            for (Map.Entry<String, int[]> resultLine : moduleMap.entrySet()) {
+                sb.append(resultLine.getKey());
+                sb.append("[label=\"");
+                int[] distanceArray = resultLine.getValue();
+                for (int i=0;i<distanceArray.length;i++){
+                    if (distanceArray[i] == 0) {
+                        continue;
+                    }
+                    sb.append("m").append(i+1).append(" (").append(distanceArray[i]).append("),");
+
+                }
+                sb.setLength(sb.length()-1);
+                sb.append("\"];");
+
+            }
+
+            sb.append("}");
+            System.out.println(sb);
         }
         return null;
     }
 
-    private void firstLineCheck(String firstLine) {
+    private void firstLineCheck(String firstLine) throws  MDException {
         if (!firstLine.matches("\\d{1,32},\\d{1,32}")) {
-            MD_error("Illegal First Line In File", MD_errorType.IllegalFistLineInFile, 9, null);
+            MD_error("Illegal First Line In File", MD_errorType.FileFormatException, 9);
         }
         String[] firstLineItems = firstLine.split(",");
 
         if (!firstLineItems[0].equals(linesFromFIle.size() + "")) {
-            MD_error("Wrong Recod Number In File", MD_errorType.WrongRecordNumberInFile, 9, null);
+            MD_error("First line module number and actual module number not match", MD_errorType.FileFormatException, 7);
         }
         fieldTotal = Integer.parseInt(firstLineItems[1]);
     }
 
-    private void bodyCheckandMergeSameMods(List<String> linesFromFIle) {
+    private void bodyCheckandMergeSameMods(List<String> linesFromFIle) throws  MDException {
         for (String record : linesFromFIle) {
             String[] fields = record.split(",");
             String moduleName = fields[0];
@@ -168,15 +188,16 @@ public MetricDistance (String fileDirectory){
 
 
             if (fields.length != fieldTotal + 1) {
-                MD_error("Error in number of fields, expected " + fieldTotal + " but " + (fields.length - 1) + " in " + moduleName, MD_errorType.WrongFieldNumberInFile, 9, null);
+                MD_error("Error in number of fields, expected " + fieldTotal + " but " + (fields.length - 1) + " in " +
+                        moduleName, MD_errorType.FileFormatException, 9);
             }
 
 
-            if (!moduleName.matches("Mod\\d{1,32}")) {
-                MD_error("Illegal Module Name " + moduleName, MD_errorType.IllegalModuleName, 9, null);
+            if (!moduleName.matches("Mod\\d+")) {
+                MD_error("Illegal Module Name in "+  moduleName, MD_errorType.FileFormatException, 9);
             }
             if (rawModNames.contains(moduleName)) {
-                MD_error("Duplicate Module Name " + moduleName, MD_errorType.DuplicateModuleName, 9, null);
+                MD_error("Duplicate Module Name " + moduleName, MD_errorType.FileFormatException, 9);
             }
             rawModNames.add(moduleName);
 
@@ -185,22 +206,22 @@ public MetricDistance (String fileDirectory){
             for (int i = 1; i < fields.length; i++) {
                 String field = fields[i].trim();
                 if (!field.matches("\\d{1,32}")) {
-                    MD_error(" Illegal Field in " + moduleName, MD_errorType.IllegalField, 9, null);
+                    MD_error(" Illegal Field in " + moduleName, MD_errorType.IllegalField, 9);
                 }
                 onlyFields[i - 1] = Integer.parseInt(field);
             }
 
 
-            String nameOfEquivilantMod = null;
+            String nameOfEquivalentMod = null;
             for (Map.Entry<String, int[]> mapRecord : moduleMap.entrySet()) {
 
                 if(Arrays.equals(mapRecord.getValue(),onlyFields)){
-                    nameOfEquivilantMod = mapRecord.getKey();
+                    nameOfEquivalentMod = mapRecord.getKey();
                     break;
                 }
             }
-            if(null != nameOfEquivilantMod){
-                moduleMap.put( nameOfEquivilantMod+moduleName, moduleMap.remove( nameOfEquivilantMod ) );
+            if(null != nameOfEquivalentMod){
+                moduleMap.put( nameOfEquivalentMod+moduleName, moduleMap.remove( nameOfEquivalentMod ) );
                 continue;
 
             }
@@ -210,7 +231,7 @@ public MetricDistance (String fileDirectory){
 
     }
 
-    private  Map<String,int[]> calculateResults() {
+    private  Map<String,int[]> calculateResults() throws  MDException{
 
         Map<String,int[]> resultMap = new HashMap<>();
 
@@ -245,6 +266,10 @@ public MetricDistance (String fileDirectory){
 
 
             }
+            if(minDistanceObj == null){
+                throw new MDException();
+            }
+
             resultMap.remove(minDistanceObj.getModName()+"->"+currentMod);
             resultMap.put(currentMod+"->"+minDistanceObj.getModName(),minDistanceObj.getDistanceArray().clone());
 
@@ -254,7 +279,7 @@ public MetricDistance (String fileDirectory){
         return resultMap;
     }
 
-    private DistanceResultObject calculateFieldsDistance(int[] currentFields, int[] otherFields) {
+    private DistanceResultObject calculateFieldsDistance(int[] currentFields, int[] otherFields) throws MDException{
 
         DistanceResultObject currentDistance = new DistanceResultObject();
         int[] distanceArray = new int[currentFields.length];
@@ -281,17 +306,28 @@ public MetricDistance (String fileDirectory){
     }
 
 
-    private void printResult(Map<String, int[]> resultmap) {
-        List<String> toDeleteKeys = new ArrayList<>();
+    private String printResult(Map<String, int[]> resultmap) throws MDException, IOException {
+
+        /*        List<String> toDeleteKeys = new ArrayList<>();
+
 
 
         for(String toDeleteKey : toDeleteKeys){
             resultmap.remove(toDeleteKey);
-        }
+        }*/
 
-        System.out.println("digraph G {");
+
+
+
+
+
+
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("digraph G {\n");
+
         for (Map.Entry<String, int[]> resultLine : resultmap.entrySet()) {
-            StringBuilder sb = new StringBuilder();
+
             sb.append(resultLine.getKey());
             sb.append("[label=\"");
             int[] distanceArray = resultLine.getValue();
@@ -299,15 +335,34 @@ public MetricDistance (String fileDirectory){
                 if (distanceArray[i] == 0){
                     continue;
                 }
-                sb.append("m"+(i+1)+" ("+distanceArray[i]+"),");
+                sb.append("m").append((i+1)).append(" (").append(distanceArray[i]).append("),");
 
             }
             sb.setLength(sb.length()-1);
-            sb.append("\"];");
-            System.out.println(sb);
-        }
-        System.out.println("}");
+            sb.append("\"];\n");
 
+        }
+        sb.append("}\n");
+        System.out.println(sb);
+
+        String filename = fileDirectory.replace(".","-result.");
+        while(true){
+
+
+            File writeName = new File(filename);
+
+            if(writeName.createNewFile()){
+                BufferedWriter out = new BufferedWriter(new FileWriter(writeName));
+                out.write(sb.toString());
+                out.flush();
+                out.close();
+
+                break;
+            }
+            filename = filename.replace(".","-new.");
+        }
+
+        return sb.toString();
     }
 
 
@@ -315,33 +370,48 @@ public MetricDistance (String fileDirectory){
 
 
 //==================================================================================Error Handling ======================================================================================================================
-    private void MD_error(String errorMessage, Enum MD_errortype, int severity, Exception e) {
-        System.err.println("==========================================ERROR==================================================");
-        System.err.println(errorMessage);
-        System.err.println("Error Type" + MD_errortype);
-        System.err.println("severity: " + severity);
-        if (null != e) {
-            e.printStackTrace();
+    private void MD_error(String errorMessage, Enum MD_errortype, int severity) throws  MDException{
+
+      StringBuilder sb = new StringBuilder();
+        sb.append("==========================================ERROR==================================================\n");
+
+
+        sb.append(errorMessage).append("\n").append("Error Type" ).append( MD_errortype).append("\n").append("severity: " ).append(severity).append("\n");
+
+        sb.append("==========================================ERROR==================================================\n");
+
+        System.err.println(sb);
+
+
+        try{
+            String fileName = fileDirectory.replace(".","-error.");
+
+
+            while(true){
+                File writeName = new File(fileName);
+                if(writeName.createNewFile()){
+                    BufferedWriter out = new BufferedWriter(new FileWriter(writeName));
+                    out.write(sb.toString());
+                    out.flush();
+                    out.close();
+                    break;
+                }
+                fileName = fileDirectory.replace(".","-new.");
+            }
+        }catch (IOException ioE){
+                    ioE.printStackTrace();
         }
-        System.err.println("=============================================ERROR===============================================");
 
-        System.exit(1);
 
+
+        throw new MDException();
     }
 
     enum MD_errorType {
         IOException,
-        Exception,
-        FileNameNotCorrect,
-        EmptySourceFile,
-        SourceFileTooShort,
-        IllegalFistLineInFile,
-        WrongRecordNumberInFile,
-        WrongFieldNumberInFile,
-        IllegalModuleName,
-        DuplicateModuleName,
+        FileDirectoryException,
+        FileFormatException,
         IllegalField,
-        AllModuleAreSame
     }
 
 }
